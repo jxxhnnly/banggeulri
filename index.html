@@ -17,8 +17,7 @@ import {
   Heart,
   Info,
   Volume2,
-  X,
-  ExternalLink
+  X
 } from 'lucide-react';
 
 const BanggeulriGuide = () => {
@@ -26,7 +25,7 @@ const BanggeulriGuide = () => {
   const [openFaqId, setOpenFaqId] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState(""); // 토스트 메시지 내용 동적 관리
+  const [toastMessage, setToastMessage] = useState(""); 
   const [showDefectModal, setShowDefectModal] = useState(false);
 
   // FAQ 토글
@@ -34,9 +33,10 @@ const BanggeulriGuide = () => {
     setOpenFaqId(prev => (prev === id ? null : id));
   };
 
-  // 🔊 효과음 재생 함수 (모든 체크리스트에 적용)
+  // 🔊 효과음 재생 함수
   const playSuccessSound = () => {
     try {
+      // @ts-ignore (구형 브라우저 호환성을 위한 무시 처리)
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       
@@ -96,11 +96,9 @@ const BanggeulriGuide = () => {
     const willCheck = !checkedItems[item.id];
     setCheckedItems(prev => ({ ...prev, [item.id]: willCheck }));
 
-    // 1. 소리는 무조건 재생
     if (willCheck) {
       playSuccessSound();
 
-      // 2. 특정 아이템 메시지 처리
       if (item.type === 'survey') {
         setToastMessage("수요조사 참여 감사합니다! 🧡");
         setShowToast(true);
@@ -138,7 +136,7 @@ const BanggeulriGuide = () => {
   return (
     <div className="min-h-screen bg-[#FFF8F0] text-gray-800 font-sans selection:bg-orange-200 pb-20 relative">
       
-      {/* 1. 동적 토스트 메시지 (수요조사 & 파우치) */}
+      {/* 1. 동적 토스트 메시지 */}
       <div className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[90] transition-all duration-500 pointer-events-none w-full max-w-sm text-center ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="inline-flex items-center bg-gray-900/95 text-white px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/20">
           <Heart className="text-pink-500 mr-2 fill-current animate-bounce" size={18} />
@@ -171,7 +169,6 @@ const BanggeulriGuide = () => {
             </div>
 
             <div className="space-y-3">
-              {/* 수정된 부분: a 태그 사용으로 링크 연결 확실하게 보장 */}
               <a 
                 href="https://x.com/banggeulri819" 
                 target="_blank" 
@@ -268,7 +265,7 @@ const BanggeulriGuide = () => {
                 문제가 있다면 <span className="font-bold text-red-500 underline">배송 완료 후 3일 이내</span>에 연락주세요.
               </p>
 
-              {/* [수정됨] 불량 문의 버튼 위치 이동: 설명 바로 아래 */}
+              {/* 불량 문의 버튼 */}
               <div className="pt-2">
                 <button 
                   onClick={() => setShowDefectModal(true)}
@@ -384,7 +381,7 @@ const BanggeulriGuide = () => {
           </div>
         </section>
 
-        {/* FAQ (버튼 제거됨 - 위로 이동) */}
+        {/* FAQ (위로 이동됨) */}
         <section className="px-6 py-6 bg-[#fafafa]">
           <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
             <HelpCircle className="mr-2 text-blue-500" size={20} />
