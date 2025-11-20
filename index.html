@@ -1,491 +1,473 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Check, 
-  Camera, 
-  Gift, 
-  Twitter, 
-  MessageCircle, 
-  ChevronDown, 
-  ChevronUp, 
-  Smile,
-  AlertTriangle,
-  HelpCircle,
-  Ban,
-  ShoppingBag,
-  Ticket,
-  Copy,
-  Heart,
-  Info,
-  Volume2,
-  X
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뱅그리 입양 가이드</title>
+    
+    <!-- 1. Tailwind CSS (스타일) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React & ReactDOM (리액트 엔진) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. Babel (브라우저가 JSX를 이해하도록 변환) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-const BanggeulriGuide = () => {
-  const [checkedItems, setCheckedItems] = useState({});
-  const [openFaqId, setOpenFaqId] = useState(null);
-  const [isCopied, setIsCopied] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState(""); 
-  const [showDefectModal, setShowDefectModal] = useState(false);
+    <style>
+        /* 스크롤바 숨기기 등 커스텀 스타일 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
+            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0,0,0.2,1); }
+        }
+        .animate-bounce { animation: bounce 1s infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-  // FAQ 토글
-  const toggleFaq = (id) => {
-    setOpenFaqId(prev => (prev === id ? null : id));
-  };
-
-  // 🔊 효과음 재생 함수
-  const playSuccessSound = () => {
-    try {
-      // @ts-ignore (구형 브라우저 호환성을 위한 무시 처리)
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      
-      const ctx = new AudioContext();
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); 
-      oscillator.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.1); 
-
-      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-
-      oscillator.start();
-      oscillator.stop(ctx.currentTime + 0.4);
-    } catch (e) {
-      console.error("Audio play failed", e);
-    }
-  };
-
-  // 해시태그 복사 기능
-  const handleCopyHashtags = () => {
-    const tags = "#뱅그리랑_와글와글 #뱅그리가왔그리";
-    const textArea = document.createElement("textarea");
-    textArea.value = tags;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('복사 실패', err);
-    }
-    document.body.removeChild(textArea);
-  };
-
-  // 체크리스트 데이터
-  const checklistData = [
-    { id: 1, text: "입양증 (인형 1개당 3장)" },
-    { id: 2, text: "스티커 (인형 1개당 5장)" },
-    { id: 3, text: "[선입금] 띠부띠부씰 (인형 1개당 1장)" },
-    { id: 4, text: "[수요조사] 칼선 스티커 (6장)", type: 'survey', highlight: true }, 
-    { id: 5, text: "오리지널 티켓 (주문건당 1개)" },
-    { id: 6, text: "칼선 부적 (주문건당 4장)" },
-    { id: 7, text: "[세트] 칼선X 부적 (세트만 1장)" },
-    { id: 8, text: "[세트] 동그리 자켓 (★추후 별도 배송★)", highlight: true },
-    { id: 9, text: "[선물] 파우치 (1~3개:1개 / 4~6개:2개)", type: 'pouch' },
-  ];
-
-  // 체크리스트 토글 핸들러
-  const toggleCheck = (item) => {
-    const willCheck = !checkedItems[item.id];
-    setCheckedItems(prev => ({ ...prev, [item.id]: willCheck }));
-
-    if (willCheck) {
-      playSuccessSound();
-
-      if (item.type === 'survey') {
-        setToastMessage("수요조사 참여 감사합니다! 🧡");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      } else if (item.type === 'pouch') {
-        setToastMessage("뱅그리를 입양해주셔서 감사합니다! 🙇‍♀️");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-      }
-    }
-  };
-
-  // FAQ 데이터
-  const faqData = [
-    {
-      id: 1,
-      icon: <AlertTriangle size={18} className="text-red-500" />,
-      q: "동그리 자켓이 안 왔어요! 누락인가요?",
-      a: "아닙니다! 📢 동그리 자켓은 제작 일정상 추후 '준등기'로 별도 배송될 예정입니다. 누락된 것이 아니니 조금만 더 기다려주세요!"
-    },
-    {
-      id: 2,
-      icon: <Ban size={18} className="text-red-500" />,
-      q: "세탁해도 되나요?",
-      a: "권장하지 않습니다! ❌ 인형의 변형이 올 수 있으므로 전체 세탁은 피해주세요. 오염된 부분만 젖은 수건으로 살살 닦아주시는 것을 추천합니다."
-    },
-    {
-      id: 3,
-      icon: <ShoppingBag size={18} className="text-purple-500" />,
-      q: "재고 판매(재판) 계획이 있나요?",
-      a: "추가 제작(재판) 예정은 없습니다. 🙅‍♀️ 배송 및 불량 교환이 모두 끝난 후, 극소량의 남은 재고에 대해서만 판매를 진행할 예정입니다."
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-[#FFF8F0] text-gray-800 font-sans selection:bg-orange-200 pb-20 relative">
-      
-      {/* 1. 동적 토스트 메시지 */}
-      <div className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[90] transition-all duration-500 pointer-events-none w-full max-w-sm text-center ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="inline-flex items-center bg-gray-900/95 text-white px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/20">
-          <Heart className="text-pink-500 mr-2 fill-current animate-bounce" size={18} />
-          <span className="font-bold text-sm whitespace-nowrap">{toastMessage}</span>
-        </div>
-      </div>
-
-      {/* 2. 불량 문의 확인 모달 */}
-      {showDefectModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative transform transition-all scale-100">
-            <button 
-              onClick={() => setShowDefectModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={24} />
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Camera className="text-red-500" size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">잠시만요! ✋</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                불량 문의를 위해서는<br/>
-                <strong className="text-red-500">끊김 없는 원테이크 개봉 영상</strong>이<br/>
-                반드시 있어야 합니다.
-              </p>
-              <p className="text-xs text-gray-400 mt-2">영상이 없으면 공장 기준상 교환이 불가합니다.</p>
-            </div>
-
-            <div className="space-y-3">
-              <a 
-                href="https://x.com/banggeulri819" 
-                target="_blank" 
-                rel="noreferrer"
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-center no-underline"
-                onClick={() => setShowDefectModal(false)}
-              >
-                <Check size={18} className="mr-2" />
-                네, 영상이 있습니다
-              </a>
-              <button 
-                onClick={() => setShowDefectModal(false)}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors"
-              >
-                다시 확인해볼게요
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 헤더 */}
-      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-orange-100 shadow-sm">
-        <div className="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center text-white shadow-md">
-              <Smile size={20} />
-            </div>
-            <span className="font-bold text-lg text-orange-900 tracking-tight">뱅그리 도착!</span>
-          </div>
-          <a href="https://x.com/banggeulri819?s=21" target="_blank" rel="noreferrer" className="bg-black text-white p-2 rounded-full hover:bg-gray-800 transition-colors">
-            <Twitter size={16} />
-          </a>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto">
+    <script type="text/babel">
+        const { useState, useEffect } = React;
         
-        {/* 인사말 */}
-        <section className="p-6 bg-white mb-2">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
-              안녕!<br/>난 <span className="text-orange-500">뱅그리</span>라고 해 🍊
-            </h1>
-            <p className="text-sm text-gray-500 font-medium">총대 지은 올림</p>
-          </div>
-          <div className="bg-orange-50 p-5 rounded-xl border border-orange-100 text-sm text-gray-700 leading-relaxed shadow-inner">
-            <p className="mb-3">
-              안녕하세요, 뱅그리 총대 지은입니다.<br/>
-              긴 시간 기다려주셔서 진심으로 감사드립니다.
-            </p>
-            <p>
-              뱅그리가 세상에 나올 수 있었던 건<br/>
-              전적으로 여러분 덕분입니다.<br/>
-              오늘도 뱅그리와 함께 행복한 하루 되세요! :)
-            </p>
-          </div>
-        </section>
-
-        {/* 불량 기준 및 검수 안내 */}
-        <section className="px-6 py-4">
-          <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
-            <h2 className="flex items-center text-gray-800 font-bold text-lg mb-3">
-              <Info className="mr-2 text-blue-500" size={22} />
-              불량 기준 및 교환 안내
-            </h2>
-            
-            <div className="space-y-4 text-sm text-gray-700">
-              <div className="bg-blue-50 p-3 rounded-lg text-xs leading-relaxed text-blue-800 font-medium">
-                모든 인형은 <strong>공장 1차 검수</strong> 후, 총대가 직접 <strong>2차 검수</strong>까지 꼼꼼히 마친 뒤 배송되었습니다.
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-bold text-gray-900 border-b border-gray-100 pb-1">✅ 불량이 아닌 경우 (교환 불가)</p>
-                <ul className="list-disc list-inside text-xs text-gray-600 space-y-1 ml-1">
-                  <li>대량 생산 특성상 발생하는 <strong>개체 차이 및 비대칭</strong></li>
-                  <li>실밥 (직접 정리 가능), 미세한 자수 튐</li>
-                  <li>봉제 마감 중 발생한 <strong>살짝 탄 자국(열처리)</strong></li>
-                  <li>배송 중 눌림으로 인한 모양 변형 <span className="text-blue-500">(경락과 볼터치로 예뻐져요!)</span></li>
-                </ul>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-bold text-red-600 border-b border-red-100 pb-1">⛔️ 불량 인정 기준 (교환 대상)</p>
-                <ul className="list-disc list-inside text-xs text-gray-800 space-y-1 ml-1 font-medium bg-red-50 p-2 rounded">
-                  <li>자수 누락</li>
-                  <li>지워지지 않는 심한 오염</li>
-                  <li>봉제선 터짐</li>
-                </ul>
-              </div>
-
-              <p className="text-xs text-gray-500 mt-2">
-                * 꼼꼼히 확인했으나 놓친 부분이 있을 수 있습니다.<br/>
-                문제가 있다면 <span className="font-bold text-red-500 underline">배송 완료 후 3일 이내</span>에 연락주세요.
-              </p>
-
-              {/* 불량 문의 버튼 */}
-              <div className="pt-2">
-                <button 
-                  onClick={() => setShowDefectModal(true)}
-                  className="w-full bg-gray-100 border border-gray-300 text-gray-700 font-bold py-2.5 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all text-sm"
-                >
-                  <MessageCircle size={16} className="mr-2" />
-                  불량 문의하기 (DM)
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 개봉 영상 가이드 */}
-        <section className="px-6 pb-4">
-           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
-             <Camera className="text-red-500 mr-3 flex-shrink-0 mt-0.5" size={20} />
-             <div className="text-xs text-red-800 leading-relaxed">
-               <strong className="block text-sm mb-1 text-red-600">불량 문의 필수 조건</strong>
-               문의 시 <strong>운송장이 보이는 무편집 원테이크 영상</strong>이 반드시 필요합니다. 영상이 없으면 공장 기준에 따라 교환/환불이 절대 불가합니다.
-             </div>
-           </div>
-        </section>
-
-        {/* 구성품 안내 */}
-        <section className="px-6 py-4 bg-white my-4">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <Gift className="mr-2 text-orange-500" size={20} />
-            구성품 상세 안내
-          </h2>
-
-          <div className="space-y-3">
-            <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm relative">
-              <span className="absolute top-3 right-3 text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">인형 1개당 지급</span>
-              <h3 className="font-bold text-gray-800 mb-2 flex items-center">🧸 인형 1개 구매 시</h3>
-              <ul className="text-sm text-gray-600 space-y-1.5 ml-1">
-                <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> 입양증 <strong className="ml-1 text-gray-900">3장</strong></li>
-                <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> 스티커 <strong className="ml-1 text-gray-900">5장</strong></li>
-                <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> [선입금] 띠부띠부씰 <strong className="ml-1 text-gray-900">1장 (랜덤)</strong></li>
-              </ul>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative">
-              <span className="absolute top-3 right-3 text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">주문건당 지급</span>
-              <h3 className="font-bold text-gray-800 mb-2 flex items-center">📦 주문건당 (N개 구매해도 1set)</h3>
-              <ul className="text-sm text-gray-600 space-y-1.5 ml-1">
-                <li className="flex items-center"><Ticket size={14} className="mr-2 text-blue-400" /> 오리지널 티켓 <strong className="ml-1 text-gray-900">1개</strong></li>
-                <li className="flex items-center"><span className="mr-2 text-blue-400 text-xs">📄</span> 칼선 부적 <strong className="ml-1 text-gray-900">4장</strong></li>
-                <li className="flex items-center bg-green-50 p-1.5 rounded mt-1">
-                   <span className="mr-2 text-green-500 text-xs font-bold">[수요조사]</span> 칼선 스티커 <strong className="ml-1 text-green-800">6장</strong>
-                </li>
-                <li className="flex items-start bg-gray-50 p-1.5 rounded text-xs text-gray-500 mt-1">
-                  <span className="mr-1 text-purple-500 font-bold">※ 세트 구매자만:</span> 
-                  칼선X 부적 1장 추가 + 동그리 자켓(별도배송)
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
-              <span className="text-xs font-bold bg-yellow-400 text-white px-2 py-1 rounded mb-2 inline-block shadow-sm">🎁 깜짝 선물 (파우치)</span>
-              <div className="text-sm text-gray-800 space-y-1 mt-1">
-                <p>• 인형 1~3개 구매: <strong className="text-orange-600">파우치 1개</strong></p>
-                <p>• 인형 4~6개 구매: <strong className="text-orange-600">파우치 2개</strong></p>
-              </div>
-              <p className="text-[10px] text-orange-600/80 bg-white/60 p-2 rounded mt-2 leading-tight">
-                * 망사 소재라 인쇄가 잘 벗겨질 수 있습니다. (총대 파우치도 이미...😇) 파우치는 덤으로 드리는 선물이니 조심히 사용해주세요!
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 체크리스트 (소리 & 메시지 효과) */}
-        <section className="p-6 bg-white my-4 border-t border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <Check className="mr-2 text-green-500" size={20} />
-              빠른 확인 체크리스트
-            </div>
-            <div className="flex items-center text-xs font-normal text-gray-400">
-              <Volume2 size={12} className="mr-1" />
-              소리를 켜보세요!
-            </div>
-          </h2>
-          
-          <div className="grid grid-cols-1 gap-2">
-            {checklistData.map((item) => (
-              <div 
-                key={item.id}
-                onClick={() => toggleCheck(item)}
-                className={`
-                  flex items-center p-3 rounded-lg border transition-all cursor-pointer select-none
-                  ${checkedItems[item.id] 
-                    ? 'bg-green-50 border-green-200 text-gray-400' 
-                    : 'bg-white border-gray-200 text-gray-700 hover:border-orange-300'}
-                `}
-              >
-                <div className={`
-                  w-5 h-5 rounded-full border mr-3 flex items-center justify-center flex-shrink-0 transition-colors
-                  ${checkedItems[item.id] ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}
-                `}>
-                  {checkedItems[item.id] && <Check size={12} className="text-white" />}
-                </div>
-                <div className="flex-1">
-                  <span className={`text-sm ${checkedItems[item.id] ? 'line-through decoration-gray-300' : ''}`}>
-                    {item.text}
-                  </span>
-                  {item.highlight && !checkedItems[item.id] && (
-                    <span className="block text-[10px] text-red-500 font-medium mt-0.5">⚠️ 확인 필요</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ (위로 이동됨) */}
-        <section className="px-6 py-6 bg-[#fafafa]">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-            <HelpCircle className="mr-2 text-blue-500" size={20} />
-            자주 묻는 질문 (FAQ)
-          </h2>
-          <div className="space-y-3 mb-6">
-            {faqData.map((faq) => (
-              <div key={faq.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
-                <button 
-                  onClick={() => toggleFaq(faq.id)}
-                  className="w-full flex justify-between items-start p-4 text-left bg-white hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start pr-4">
-                    <span className="mt-0.5 mr-2 flex-shrink-0">{faq.icon}</span>
-                    <span className="font-bold text-sm text-gray-800 leading-snug">{faq.q}</span>
-                  </div>
-                  {openFaqId === faq.id ? <ChevronUp size={18} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />}
-                </button>
-                {openFaqId === faq.id && (
-                  <div className="p-4 pt-0 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
-                    <div className="mt-3 font-medium whitespace-pre-wrap">{faq.a}</div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 후기 이벤트 */}
-        <section className="p-6 pt-2">
-          <div className="bg-gray-900 text-white rounded-2xl p-6 text-center relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-500 to-pink-500 opacity-20 rounded-full blur-3xl"></div>
-            
-            <Heart size={28} className="mx-auto mb-3 text-pink-400 animate-pulse" />
-            <h2 className="text-lg font-bold mb-2">📸 뱅그리와 추억 만들기</h2>
-            
-            <div className="bg-white/10 rounded-xl p-4 mb-5 text-sm leading-relaxed text-gray-200 backdrop-blur-md border border-white/10">
-              <p className="mb-2">
-                "여러분의 후기 사진을 보면 정말 기쁠 것 같아요!"
-              </p>
-              <p className="font-light opacity-90">
-                카페, 여행지, 집 앞 산책로 어디든 좋아요.<br/>
-                앞으로 뱅그리와 여기저기 많이 다니면서<br/>
-                행복한 순간들을 사진으로 남겨주세요. 🧡
-              </p>
-            </div>
-
-            <p className="text-xs text-gray-400 mb-3">
-              예쁜 후기를 남겨주시면 추첨을 통해<br/>
-              <span className="text-yellow-400 font-bold">띠부띠부씰 9종 세트</span>를 드려요!
-            </p>
-            
-            <div className="mb-5">
-              <div className="text-xs font-mono text-blue-200 mb-2 break-all text-center opacity-80">
-                #뱅그리랑_와글와글 #뱅그리가왔그리
-              </div>
-              <button 
-                onClick={handleCopyHashtags}
-                className={`
-                  w-full flex items-center justify-center py-2 rounded-lg text-sm font-bold transition-all duration-200 shadow-md
-                  ${isCopied 
-                    ? 'bg-green-500 text-white scale-95' 
-                    : 'bg-white text-gray-900 hover:bg-gray-100'}
-                `}
-              >
-                {isCopied ? (
-                  <>
-                    <Check size={16} className="mr-2" />
-                    복사 완료!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} className="mr-2" />
-                    해시태그 복사하기
-                  </>
-                )}
-              </button>
-            </div>
-            
-            <a 
-              href="https://x.com/banggeulri819?s=21" 
-              target="_blank" 
-              rel="noreferrer"
-              className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg transform hover:scale-105"
+        // [Fix] 아이콘을 외부에서 불러오는 대신 직접 정의합니다 (오류 원천 차단)
+        const IconBase = ({ children, size = 24, className = "", ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className} 
+                {...props}
             >
-              <Twitter size={16} className="mr-2" />
-              트위터 바로가기
-            </a>
-          </div>
-        </section>
+                {children}
+            </svg>
+        );
 
-        {/* 푸터 */}
-        <footer className="text-center p-8 pb-12 text-gray-300 text-xs bg-white border-t border-gray-100 mt-6">
-          <p className="mb-2">모든 문의는 트위터 DM으로 부탁드립니다.</p>
-          <a href="https://x.com/banggeulri819?s=21" className="flex justify-center items-center text-gray-400 hover:text-orange-500 transition-colors mb-4">
-            <MessageCircle size={12} className="mr-1" />
-            @banggeulri819
-          </a>
-          <p className="font-mono opacity-50 text-[10px]">Managed by Jieun</p>
-        </footer>
+        const Smile = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></IconBase>;
+        const Twitter = (props) => <IconBase {...props}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></IconBase>;
+        const Check = (props) => <IconBase {...props}><polyline points="20 6 9 17 4 12"/></IconBase>;
+        const Camera = (props) => <IconBase {...props}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></IconBase>;
+        const Gift = (props) => <IconBase {...props}><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></IconBase>;
+        const MessageCircle = (props) => <IconBase {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconBase>;
+        const ChevronDown = (props) => <IconBase {...props}><polyline points="6 9 12 15 18 9"/></IconBase>;
+        const ChevronUp = (props) => <IconBase {...props}><polyline points="18 15 12 9 6 15"/></IconBase>;
+        const AlertTriangle = (props) => <IconBase {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const HelpCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const Ban = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></IconBase>;
+        const ShoppingBag = (props) => <IconBase {...props}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></IconBase>;
+        const Ticket = (props) => <IconBase {...props}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></IconBase>;
+        const Copy = (props) => <IconBase {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></IconBase>;
+        const Heart = (props) => <IconBase {...props}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></IconBase>;
+        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconBase>;
+        const Volume2 = (props) => <IconBase {...props}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></IconBase>;
+        const X = (props) => <IconBase {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconBase>;
 
-      </main>
-    </div>
-  );
-};
 
-export default BanggeulriGuide;
+        const BanggeulriGuide = () => {
+            const [checkedItems, setCheckedItems] = useState({});
+            const [openFaqId, setOpenFaqId] = useState(null);
+            const [isCopied, setIsCopied] = useState(false);
+            const [showToast, setShowToast] = useState(false);
+            const [toastMessage, setToastMessage] = useState(""); 
+            const [showDefectModal, setShowDefectModal] = useState(false);
+
+            // FAQ 토글
+            const toggleFaq = (id) => {
+                setOpenFaqId(prev => (prev === id ? null : id));
+            };
+
+            // 🔊 효과음 재생 함수
+            const playSuccessSound = () => {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    
+                    const ctx = new AudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); 
+                    oscillator.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.1); 
+
+                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+
+                    oscillator.start();
+                    oscillator.stop(ctx.currentTime + 0.4);
+                } catch (e) {
+                    console.error("Audio play failed", e);
+                }
+            };
+
+            // 해시태그 복사 기능
+            const handleCopyHashtags = () => {
+                const tags = "#뱅그리랑_와글와글 #뱅그리가왔그리";
+                const textArea = document.createElement("textarea");
+                textArea.value = tags;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                } catch (err) {
+                    console.error('복사 실패', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            // 데이터
+            const checklistData = [
+                { id: 1, text: "입양증 (인형 1개당 3장)" },
+                { id: 2, text: "스티커 (인형 1개당 5장)" },
+                { id: 3, text: "[선입금] 띠부띠부씰 (인형 1개당 1장)" },
+                { id: 4, text: "[수요조사] 칼선 스티커 (6장)", type: 'survey', highlight: true }, 
+                { id: 5, text: "오리지널 티켓 (주문건당 1개)" },
+                { id: 6, text: "칼선 부적 (주문건당 4장)" },
+                { id: 7, text: "[세트] 칼선X 부적 (세트만 1장)" },
+                { id: 8, text: "[세트] 동그리 자켓 (★추후 별도 배송★)", highlight: true },
+                { id: 9, text: "[선물] 파우치 (1~3개:1개 / 4~6개:2개)", type: 'pouch' },
+            ];
+
+            const faqData = [
+                {
+                    id: 1,
+                    icon: <AlertTriangle size={18} className="text-red-500" />,
+                    q: "동그리 자켓이 안 왔어요! 누락인가요?",
+                    a: "아닙니다! 📢 동그리 자켓은 제작 일정상 추후 '준등기'로 별도 배송될 예정입니다. 누락된 것이 아니니 조금만 더 기다려주세요!"
+                },
+                {
+                    id: 2,
+                    icon: <Ban size={18} className="text-red-500" />,
+                    q: "세탁해도 되나요?",
+                    a: "권장하지 않습니다! ❌ 인형의 변형이 올 수 있으므로 전체 세탁은 피해주세요. 오염된 부분만 젖은 수건으로 살살 닦아주시는 것을 추천합니다."
+                },
+                {
+                    id: 3,
+                    icon: <ShoppingBag size={18} className="text-purple-500" />,
+                    q: "재고 판매(재판) 계획이 있나요?",
+                    a: "추가 제작(재판) 예정은 없습니다. 🙅‍♀️ 배송 및 불량 교환이 모두 끝난 후, 극소량의 남은 재고에 대해서만 판매를 진행할 예정입니다."
+                }
+            ];
+
+            // 토글 핸들러
+            const toggleCheck = (item) => {
+                const willCheck = !checkedItems[item.id];
+                setCheckedItems(prev => ({ ...prev, [item.id]: willCheck }));
+
+                if (willCheck) {
+                    playSuccessSound();
+                    if (item.type === 'survey') {
+                        setToastMessage("수요조사 참여 감사합니다! 🧡");
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 3000);
+                    } else if (item.type === 'pouch') {
+                        setToastMessage("뱅그리를 입양해주셔서 감사합니다! 🙇‍♀️");
+                        setShowToast(true);
+                        setTimeout(() => setShowToast(false), 3000);
+                    }
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-[#FFF8F0] text-gray-800 font-sans selection:bg-orange-200 pb-20 relative">
+                    
+                    {/* 토스트 메시지 */}
+                    <div className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 z-[90] transition-all duration-500 pointer-events-none w-full max-w-sm text-center ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                        <div className="inline-flex items-center bg-gray-900/95 text-white px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/20">
+                            <Heart className="text-pink-500 mr-2 fill-current animate-bounce" size={18} />
+                            <span className="font-bold text-sm whitespace-nowrap">{toastMessage}</span>
+                        </div>
+                    </div>
+
+                    {/* 불량 문의 모달 */}
+                    {showDefectModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative transform transition-all scale-100">
+                                <button onClick={() => setShowDefectModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                                    <X size={24} />
+                                </button>
+                                <div className="text-center mb-6">
+                                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Camera className="text-red-500" size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">잠시만요! ✋</h3>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                        불량 문의를 위해서는<br/>
+                                        <strong className="text-red-500">끊김 없는 원테이크 개봉 영상</strong>이<br/>
+                                        반드시 있어야 합니다.
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-2">영상이 없으면 공장 기준상 교환이 불가합니다.</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <a href="https://x.com/banggeulri819" target="_blank" rel="noreferrer"
+                                       className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-center no-underline"
+                                       onClick={() => setShowDefectModal(false)}>
+                                        <Check size={18} className="mr-2" />
+                                        네, 영상이 있습니다
+                                    </a>
+                                    <button onClick={() => setShowDefectModal(false)} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-colors">
+                                        다시 확인해볼게요
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 헤더 */}
+                    <header className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-orange-100 shadow-sm">
+                        <div className="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center text-white shadow-md">
+                                    <Smile size={20} />
+                                </div>
+                                <span className="font-bold text-lg text-orange-900 tracking-tight">뱅그리 도착!</span>
+                            </div>
+                            <a href="https://x.com/banggeulri819?s=21" target="_blank" rel="noreferrer" className="bg-black text-white p-2 rounded-full hover:bg-gray-800 transition-colors">
+                                <Twitter size={16} />
+                            </a>
+                        </div>
+                    </header>
+
+                    <main className="max-w-lg mx-auto">
+                        {/* 인사말 */}
+                        <section className="p-6 bg-white mb-2">
+                            <div className="text-center mb-6">
+                                <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+                                    안녕!<br/>난 <span className="text-orange-500">뱅그리</span>라고 해 🍊
+                                </h1>
+                                <p className="text-sm text-gray-500 font-medium">총대 지은 올림</p>
+                            </div>
+                            <div className="bg-orange-50 p-5 rounded-xl border border-orange-100 text-sm text-gray-700 leading-relaxed shadow-inner">
+                                <p className="mb-3">
+                                    안녕하세요, 뱅그리 총대 지은입니다.<br/>
+                                    긴 시간 기다려주셔서 진심으로 감사드립니다.
+                                </p>
+                                <p>
+                                    뱅그리가 세상에 나올 수 있었던 건<br/>
+                                    전적으로 여러분 덕분입니다.<br/>
+                                    오늘도 뱅그리와 함께 행복한 하루 되세요! :)
+                                </p>
+                            </div>
+                        </section>
+
+                        {/* 불량 기준 및 문의 */}
+                        <section className="px-6 py-4">
+                            <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                                <h2 className="flex items-center text-gray-800 font-bold text-lg mb-3">
+                                    <Info className="mr-2 text-blue-500" size={22} />
+                                    불량 기준 및 교환 안내
+                                </h2>
+                                <div className="space-y-4 text-sm text-gray-700">
+                                    <div className="bg-blue-50 p-3 rounded-lg text-xs leading-relaxed text-blue-800 font-medium">
+                                        모든 인형은 <strong>공장 1차 검수</strong> 후, 총대가 직접 <strong>2차 검수</strong>까지 꼼꼼히 마친 뒤 배송되었습니다.
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-bold text-gray-900 border-b border-gray-100 pb-1">✅ 불량이 아닌 경우 (교환 불가)</p>
+                                        <ul className="list-disc list-inside text-xs text-gray-600 space-y-1 ml-1">
+                                            <li>대량 생산 특성상 발생하는 <strong>개체 차이 및 비대칭</strong></li>
+                                            <li>실밥 (직접 정리 가능), 미세한 자수 튐</li>
+                                            <li>봉제 마감 중 발생한 <strong>살짝 탄 자국(열처리)</strong></li>
+                                            <li>배송 중 눌림으로 인한 모양 변형 <span className="text-blue-500">(경락과 볼터치로 예뻐져요!)</span></li>
+                                        </ul>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-bold text-red-600 border-b border-red-100 pb-1">⛔️ 불량 인정 기준 (교환 대상)</p>
+                                        <ul className="list-disc list-inside text-xs text-gray-800 space-y-1 ml-1 font-medium bg-red-50 p-2 rounded">
+                                            <li>자수 누락</li>
+                                            <li>지워지지 않는 심한 오염</li>
+                                            <li>봉제선 터짐</li>
+                                        </ul>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        * 꼼꼼히 확인했으나 놓친 부분이 있을 수 있습니다.<br/>
+                                        문제가 있다면 <span className="font-bold text-red-500 underline">배송 완료 후 3일 이내</span>에 연락주세요.
+                                    </p>
+                                    <div className="pt-2">
+                                        <button onClick={() => setShowDefectModal(true)} className="w-full bg-gray-100 border border-gray-300 text-gray-700 font-bold py-2.5 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all text-sm">
+                                            <MessageCircle size={16} className="mr-2" />
+                                            불량 문의하기 (DM)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 개봉 영상 가이드 */}
+                        <section className="px-6 pb-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
+                                <Camera className="text-red-500 mr-3 flex-shrink-0 mt-0.5" size={20} />
+                                <div className="text-xs text-red-800 leading-relaxed">
+                                    <strong className="block text-sm mb-1 text-red-600">불량 문의 필수 조건</strong>
+                                    문의 시 <strong>운송장이 보이는 무편집 원테이크 영상</strong>이 반드시 필요합니다. 영상이 없으면 공장 기준에 따라 교환/환불이 절대 불가합니다.
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 구성품 안내 */}
+                        <section className="px-6 py-4 bg-white my-4">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                <Gift className="mr-2 text-orange-500" size={20} />
+                                구성품 상세 안내
+                            </h2>
+                            <div className="space-y-3">
+                                <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm relative">
+                                    <span className="absolute top-3 right-3 text-[10px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">인형 1개당 지급</span>
+                                    <h3 className="font-bold text-gray-800 mb-2 flex items-center">🧸 인형 1개 구매 시</h3>
+                                    <ul className="text-sm text-gray-600 space-y-1.5 ml-1">
+                                        <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> 입양증 <strong className="ml-1 text-gray-900">3장</strong></li>
+                                        <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> 스티커 <strong className="ml-1 text-gray-900">5장</strong></li>
+                                        <li className="flex items-start"><span className="mr-2 text-orange-400">•</span> [선입금] 띠부띠부씰 <strong className="ml-1 text-gray-900">1장 (랜덤)</strong></li>
+                                    </ul>
+                                </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative">
+                                    <span className="absolute top-3 right-3 text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">주문건당 지급</span>
+                                    <h3 className="font-bold text-gray-800 mb-2 flex items-center">📦 주문건당 (N개 구매해도 1set)</h3>
+                                    <ul className="text-sm text-gray-600 space-y-1.5 ml-1">
+                                        <li className="flex items-center"><Ticket size={14} className="mr-2 text-blue-400" /> 오리지널 티켓 <strong className="ml-1 text-gray-900">1개</strong></li>
+                                        <li className="flex items-center"><span className="mr-2 text-blue-400 text-xs">📄</span> 칼선 부적 <strong className="ml-1 text-gray-900">4장</strong></li>
+                                        <li className="flex items-center bg-green-50 p-1.5 rounded mt-1">
+                                            <span className="mr-2 text-green-500 text-xs font-bold">[수요조사]</span> 칼선 스티커 <strong className="ml-1 text-green-800">6장</strong>
+                                        </li>
+                                        <li className="flex items-start bg-gray-50 p-1.5 rounded text-xs text-gray-500 mt-1">
+                                            <span className="mr-1 text-purple-500 font-bold">※ 세트 구매자만:</span> 
+                                            칼선X 부적 1장 추가 + 동그리 자켓(별도배송)
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
+                                    <span className="text-xs font-bold bg-yellow-400 text-white px-2 py-1 rounded mb-2 inline-block shadow-sm">🎁 깜짝 선물 (파우치)</span>
+                                    <div className="text-sm text-gray-800 space-y-1 mt-1">
+                                        <p>• 인형 1~3개 구매: <strong className="text-orange-600">파우치 1개</strong></p>
+                                        <p>• 인형 4~6개 구매: <strong className="text-orange-600">파우치 2개</strong></p>
+                                    </div>
+                                    <p className="text-[10px] text-orange-600/80 bg-white/60 p-2 rounded mt-2 leading-tight">
+                                        * 망사 소재라 인쇄가 잘 벗겨질 수 있습니다. (총대 파우치도 이미...😇) 파우치는 덤으로 드리는 선물이니 조심히 사용해주세요!
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 체크리스트 */}
+                        <section className="p-6 bg-white my-4 border-t border-gray-100">
+                            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <Check className="mr-2 text-green-500" size={20} />
+                                    빠른 확인 체크리스트
+                                </div>
+                                <div className="flex items-center text-xs font-normal text-gray-400">
+                                    <Volume2 size={12} className="mr-1" />
+                                    소리를 켜보세요!
+                                </div>
+                            </h2>
+                            <div className="grid grid-cols-1 gap-2">
+                                {checklistData.map((item) => (
+                                    <div key={item.id} onClick={() => toggleCheck(item)}
+                                         className={`flex items-center p-3 rounded-lg border transition-all cursor-pointer select-none
+                                         ${checkedItems[item.id] ? 'bg-green-50 border-green-200 text-gray-400' : 'bg-white border-gray-200 text-gray-700 hover:border-orange-300'}`}>
+                                        <div className={`w-5 h-5 rounded-full border mr-3 flex items-center justify-center flex-shrink-0 transition-colors
+                                            ${checkedItems[item.id] ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>
+                                            {checkedItems[item.id] && <Check size={12} className="text-white" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className={`text-sm ${checkedItems[item.id] ? 'line-through decoration-gray-300' : ''}`}>{item.text}</span>
+                                            {item.highlight && !checkedItems[item.id] && (
+                                                <span className="block text-[10px] text-red-500 font-medium mt-0.5">⚠️ 확인 필요</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* FAQ */}
+                        <section className="px-6 py-6 bg-[#fafafa]">
+                            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                <HelpCircle className="mr-2 text-blue-500" size={20} />
+                                자주 묻는 질문 (FAQ)
+                            </h2>
+                            <div className="space-y-3 mb-6">
+                                {faqData.map((faq) => (
+                                    <div key={faq.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                                        <button onClick={() => toggleFaq(faq.id)} className="w-full flex justify-between items-start p-4 text-left bg-white hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-start pr-4">
+                                                <span className="mt-0.5 mr-2 flex-shrink-0">{faq.icon}</span>
+                                                <span className="font-bold text-sm text-gray-800 leading-snug">{faq.q}</span>
+                                            </div>
+                                            {openFaqId === faq.id ? <ChevronUp size={18} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />}
+                                        </button>
+                                        {openFaqId === faq.id && (
+                                            <div className="p-4 pt-0 bg-gray-50 text-sm text-gray-600 border-t border-gray-100 leading-relaxed">
+                                                <div className="mt-3 font-medium whitespace-pre-wrap">{faq.a}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* 후기 이벤트 */}
+                        <section className="p-6 pt-2">
+                            <div className="bg-gray-900 text-white rounded-2xl p-6 text-center relative overflow-hidden shadow-xl">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-500 to-pink-500 opacity-20 rounded-full blur-3xl"></div>
+                                <Heart size={28} className="mx-auto mb-3 text-pink-400 animate-pulse" />
+                                <h2 className="text-lg font-bold mb-2">📸 뱅그리와 추억 만들기</h2>
+                                <div className="bg-white/10 rounded-xl p-4 mb-5 text-sm leading-relaxed text-gray-200 backdrop-blur-md border border-white/10">
+                                    <p className="mb-2">"여러분의 후기 사진을 보면 정말 기쁠 것 같아요!"</p>
+                                    <p className="font-light opacity-90">
+                                        카페, 여행지, 집 앞 산책로 어디든 좋아요.<br/>
+                                        앞으로 뱅그리와 여기저기 많이 다니면서<br/>
+                                        행복한 순간들을 사진으로 남겨주세요. 🧡
+                                    </p>
+                                </div>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    예쁜 후기를 남겨주시면 추첨을 통해<br/>
+                                    <span className="text-yellow-400 font-bold">띠부띠부씰 9종 세트</span>를 드려요!
+                                </p>
+                                <div className="mb-5">
+                                    <div className="text-xs font-mono text-blue-200 mb-2 break-all text-center opacity-80">#뱅그리랑_와글와글 #뱅그리가왔그리</div>
+                                    <button onClick={handleCopyHashtags} className={`w-full flex items-center justify-center py-2 rounded-lg text-sm font-bold transition-all duration-200 shadow-md ${isCopied ? 'bg-green-500 text-white scale-95' : 'bg-white text-gray-900 hover:bg-gray-100'}`}>
+                                        {isCopied ? <><Check size={16} className="mr-2" />복사 완료!</> : <><Copy size={16} className="mr-2" />해시태그 복사하기</>}
+                                    </button>
+                                </div>
+                                <a href="https://x.com/banggeulri819?s=21" target="_blank" rel="noreferrer" className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg transform hover:scale-105">
+                                    <Twitter size={16} className="mr-2" /> 트위터 바로가기
+                                </a>
+                            </div>
+                        </section>
+
+                        {/* 푸터 */}
+                        <footer className="text-center p-8 pb-12 text-gray-300 text-xs bg-white border-t border-gray-100 mt-6">
+                            <p className="mb-2">모든 문의는 트위터 DM으로 부탁드립니다.</p>
+                            <a href="https://x.com/banggeulri819?s=21" className="flex justify-center items-center text-gray-400 hover:text-orange-500 transition-colors mb-4">
+                                <MessageCircle size={12} className="mr-1" /> @banggeulri819
+                            </a>
+                            <p className="font-mono opacity-50 text-[10px]">Managed by Jieun</p>
+                        </footer>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BanggeulriGuide />);
+    </script>
+</body>
+</html>
